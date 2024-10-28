@@ -336,13 +336,13 @@ class Brain:
       num_first_winners_processed = 0
 
     else:
-	    target_area_name = target_area.name
+	    target_area.name = target_area.name
 	    prev_winner_inputs = np.zeros(target_area.w, dtype=np.float32)
 	    for stim in from_stimuli:
-	      stim_inputs = self.connectomes_by_stimulus[stim][target_area_name]
+	      stim_inputs = self.connectomes_by_stimulus[stim][target_area.name]
 	      prev_winner_inputs += stim_inputs
 	    for from_area_name in from_areas:
-	      connectome = self.connectomes[from_area_name][target_area_name]
+	      connectome = self.connectomes[from_area_name][target_area.name]
 	      for w in self.area_by_name[from_area_name].winners:
 	        prev_winner_inputs += connectome[w]
 
@@ -360,7 +360,7 @@ class Brain:
 	        input_size_by_from_area_index.append(local_k)
 	        num_inputs += 1
 	        ### if self._use_normal_ppf:  # Not active currently.
-	        ###   local_p = self.custom_stim_p[stim][target_area_name]
+	        ###   local_p = self.custom_stim_p[stim][target_area.name]
 	        ###   normal_approx_mean += local_k * local_p
 	        ###   normal_approx_var += ((local_k * local_p * (1 - local_p)) ** 2)
 	      for from_area_name in from_areas:
@@ -370,7 +370,7 @@ class Brain:
 	        input_size_by_from_area_index.append(effective_k)
 	        num_inputs += 1
 	        ### if self._use_normal_ppf:  # Disabled for now.
-	        ###   local_p = self.custom_stim_p[from_area_name][target_area_name]
+	        ###   local_p = self.custom_stim_p[from_area_name][target_area.name]
 	        ###   normal_approx_mean += effective_k * local_p
 	        ###   normal_approx_var += ((effective_k * local_p * (1-p)) ** 2)
 
@@ -381,7 +381,7 @@ class Brain:
 	      effective_n = target_area.n - target_area.w
 	      if effective_n <= target_area.k:
 	      	raise RuntimeError(
-	      	    f'Remaining size of area "{target_area_name}" too small to sample k new winners.')
+	      	    f'Remaining size of area "{target_area.name}" too small to sample k new winners.')
 	      # Threshold for inputs that are above (n-k)/n quantile.
 	      quantile = (effective_n - target_area.k) / effective_n
 	      if False:
@@ -478,11 +478,11 @@ class Brain:
     for stim in from_stimuli:
       connectomes = self.connectomes_by_stimulus[stim]
       if num_first_winners_processed > 0:
-        connectomes[target_area_name] = target_connectome = np.resize(
-            connectomes[target_area_name],
+        connectomes[target_area.name] = target_connectome = np.resize(
+            connectomes[target_area.name],
             target_area._new_w)
       else:
-        target_connectome = connectomes[target_area_name]
+        target_connectome = connectomes[target_area.name]
       first_winner_synapses = target_connectome[target_area.w:]
       for i in range(num_first_winners_processed):
         first_winner_synapses[i] = (
@@ -494,7 +494,7 @@ class Brain:
         target_connectome[i] *= 1 + stim_to_area_beta
       if verbose >= 2:
         print(f"{stim} now looks like: ")
-        print(self.connectomes_by_stimulus[stim][target_area_name])
+        print(self.connectomes_by_stimulus[stim][target_area.name])
       num_inputs_processed += 1
 
     # update connectomes from stimuli that were not fired this round into the area.
@@ -502,8 +502,8 @@ class Brain:
 	    for stim_name, connectomes in self.connectomes_by_stimulus.items():
 	        if stim_name in from_stimuli:
 	    	    continue
-	        connectomes[target_area_name] = the_connectome = np.resize(
-	    		connectomes[target_area_name],
+	        connectomes[target_area.name] = the_connectome = np.resize(
+	    		connectomes[target_area.name],
 	    		target_area._new_w)
 	        the_connectome[target_area.w:] = rng.binomial(
                 self.stimulus_size_by_name[stim_name], self.p,
@@ -519,8 +519,8 @@ class Brain:
       from_area_winners_set = set(from_area_winners)
       from_area_connectomes = self.connectomes[from_area_name]
       # Q: Can we replace .pad() with numpy.resize() here?
-      the_connectome = from_area_connectomes[target_area_name] = np.pad(
-          from_area_connectomes[target_area_name],
+      the_connectome = from_area_connectomes[target_area.name] = np.pad(
+          from_area_connectomes[target_area.name],
           ((0, 0), (0, num_first_winners_processed)))
       for i in range(num_first_winners_processed):
         total_in = inputs_by_first_winner_index[i][num_inputs_processed]
@@ -537,7 +537,7 @@ class Brain:
         for j in from_area_winners:
           the_connectome[j, i] *= 1.0 + area_to_area_beta
       if verbose >= 2:
-        print(f"Connectome of {from_area_name} to {target_area_name} is now:",
+        print(f"Connectome of {from_area_name} to {target_area.name} is now:",
               the_connectome)
       num_inputs_processed += 1
 
@@ -546,15 +546,15 @@ class Brain:
     for other_area_name, other_area in self.area_by_name.items():
       other_area_connectomes = self.connectomes[other_area_name]
       if other_area_name not in from_areas:
-        the_other_area_connectome = other_area_connectomes[target_area_name] = (
+        the_other_area_connectome = other_area_connectomes[target_area.name] = (
           np.pad(
-              other_area_connectomes[target_area_name],
+              other_area_connectomes[target_area.name],
               ((0, 0), (0, num_first_winners_processed))))
         the_other_area_connectome[:, target_area.w:] = rng.binomial(
           1, self.p, size=(the_other_area_connectome.shape[0],
                            target_area._new_w - target_area.w))
       # add num_first_winners_processed rows, all bernoulli with probability p
-      target_area_connectomes = self.connectomes[target_area_name]
+      target_area_connectomes = self.connectomes[target_area.name]
       the_target_area_connectome = target_area_connectomes[other_area_name] = (
         np.pad(
           target_area_connectomes[other_area_name],
@@ -564,7 +564,7 @@ class Brain:
           size=(target_area._new_w - target_area.w,
                 the_target_area_connectome.shape[1]))
       if verbose >= 2:
-        print(f"Connectome of {target_area_name!r} to {other_area_name!r} "
-              "is now:", self.connectomes[target_area_name][other_area_name])
+        print(f"Connectome of {target_area.name!r} to {other_area_name!r} "
+              "is now:", self.connectomes[target_area.name][other_area_name])
 
     return num_first_winners_processed
